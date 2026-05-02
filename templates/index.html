@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpendWise — Expense Tracker</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- BUDGET ALERT POPUP -->
+<div id="alert-popup" class="alert-popup hidden">
+  <span id="alert-msg"></span>
+  <button onclick="document.getElementById('alert-popup').classList.add('hidden')">✕</button>
+</div>
+
+<!-- QUOTE BANNER -->
+<div id="quote-banner" class="quote-banner"></div>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">💸 SpendWise</div>
+    <nav>
+      <button class="nav-btn active"  onclick="showSection('dashboard', this)">📊 Dashboard</button>
+      <button class="nav-btn"         onclick="showSection('add', this)">➕ Add Expense</button>
+      <button class="nav-btn"         onclick="showSection('history', this)">📋 History</button>
+      <button class="nav-btn"         onclick="showSection('analytics', this)">📈 Analytics</button>
+      <button class="nav-btn"         onclick="showSection('wallets', this)">🗂️ Wallets</button>
+      <button class="nav-btn"         onclick="showSection('profile', this)">👤 Profile</button>
+      <button class="nav-btn"         onclick="showSection('goals', this)">🎯 Goals</button>
+    </nav>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark Mode</button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="section active">
+      <h1 class="page-title">Dashboard</h1>
+      <div class="stats-grid">
+        <div class="stat-card accent">
+          <span class="stat-label">Spent This Month</span>
+          <span class="stat-value" id="month-total">₹0.00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Spent This Week</span>
+          <span class="stat-value" id="week-total">₹0.00</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Monthly Budget</span>
+          <span class="stat-value" id="budget-display">₹0.00</span>
+        </div>
+        <div class="stat-card green">
+          <span class="stat-label">Savings Target</span>
+          <span class="stat-value" id="savings-display">₹0.00</span>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <h2>Category Breakdown</h2>
+          <canvas id="categoryChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h2>Budget vs Spent</h2>
+          <canvas id="budgetChart"></canvas>
+          <p id="budget-msg" class="budget-msg"></p>
+        </div>
+      </div>
+    </section>
+    <!-- ADD EXPENSE -->
+    <section id="add" class="section">
+      <h1 class="page-title">Add Expense</h1>
+      <div class="form-card">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="exp-title" placeholder="e.g. Groceries, Netflix, Rent..."/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <input type="number" id="exp-amount" placeholder="0.00" step="0.01" min="0"/>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="exp-category">
+              <option>Food</option><option>Transport</option><option>Entertainment</option>
+              <option>Health</option><option>Shopping</option><option>Bills</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Wallet</label>
+            <select id="exp-wallet">
+              <option>Cash</option><option>Card</option><option>UPI</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="exp-date"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Note (optional)</label>
+          <input type="text" id="exp-note" placeholder="Any extra detail..."/>
+        </div>
+        <div class="form-group recurring-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="exp-recurring"/>
+            <span>🔁 Mark as recurring expense</span>
+          </label>
+        </div>
+        <button class="btn-primary" onclick="addExpense()">➕ Add Expense</button>
+        <div id="add-msg" class="success-msg" style="display:none">✅ Expense added!</div>
+      </div>
+    </section>
+    <!-- HISTORY -->
+    <section id="history" class="section">
+      <h1 class="page-title">Expense History</h1>
+      <div class="filter-bar">
+        <input type="text" id="search-input" placeholder="🔍 Search expenses..." oninput="loadHistory()"/>
+        <select id="filter-category" onchange="loadHistory()">
+          <option value="">All Categories</option>
+          <option>Food</option><option>Transport</option><option>Entertainment</option>
+          <option>Health</option><option>Shopping</option><option>Bills</option><option>Other</option>
+        </select>
+        <select id="filter-wallet" onchange="loadHistory()">
+          <option value="">All Wallets</option>
+          <option>Cash</option><option>Card</option><option>UPI</option>
+        </select>
+      </div>
+      <div id="expense-list" class="expense-list">
+        <p class="empty-msg">No expenses yet.</p>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section id="analytics" class="section">
+      <h1 class="page-title">Analytics</h1>
+      <div class="charts-row">
+        <div class="chart-card full-width">
+          <h2>📈 6-Month Spending Trend</h2>
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      <div class="charts-row" style="margin-top:1.5rem">
+        <div class="chart-card">
+          <h2>🗂️ Wallet Usage This Month</h2>
+          <canvas id="walletChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h2>🔁 Recurring vs One-Time</h2>
+          <canvas id="recurringChart"></canvas>
+        </div>
+      </div>
+    </section>
+    <!-- WALLETS -->
+    <section id="wallets" class="section">
+      <h1 class="page-title">Wallets</h1>
+      <div class="wallet-grid" id="wallet-grid">
+        <div class="wallet-card cash">
+          <div class="wallet-icon">💵</div>
+          <div class="wallet-name">Cash</div>
+          <div class="wallet-amount" id="wallet-cash">₹0.00</div>
+          <div class="wallet-label">spent this month</div>
+        </div>
+        <div class="wallet-card card">
+          <div class="wallet-icon">💳</div>
+          <div class="wallet-name">Card</div>
+          <div class="wallet-amount" id="wallet-card">₹0.00</div>
+          <div class="wallet-label">spent this month</div>
+        </div>
+        <div class="wallet-card upi">
+          <div class="wallet-icon">📱</div>
+          <div class="wallet-name">UPI</div>
+          <div class="wallet-amount" id="wallet-upi">₹0.00</div>
+          <div class="wallet-label">spent this month</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="profile" class="section">
+      <h1 class="page-title">My Profile</h1>
+      <div class="form-card profile-card">
+        <div class="avatar-section">
+          <div class="avatar" id="avatar-preview">👤</div>
+          <label class="btn-secondary">
+            📷 Upload Photo
+            <input type="file" id="profile-photo" accept="image/*" style="display:none" onchange="previewPhoto(event)"/>
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Your Name</label>
+          <input type="text" id="profile-name" placeholder="e.g. Rahul Sharma"/>
+        </div>
+        <div class="form-group">
+          <label>Monthly Income (₹)</label>
+          <input type="number" id="profile-income" placeholder="e.g. 50000"/>
+        </div>
+        <button class="btn-primary" onclick="saveProfile()">💾 Save Profile</button>
+        <div id="profile-msg" class="success-msg" style="display:none">✅ Profile saved!</div>
+        <div id="income-summary" class="income-summary" style="display:none"></div>
+      </div>
+    </section>
+    <!-- GOALS -->
+    <section id="goals" class="section">
+      <h1 class="page-title">Budget & Goals</h1>
+      <div class="form-card">
+        <div class="form-group">
+          <label>Monthly Budget (₹)</label>
+          <input type="number" id="goal-budget" placeholder="e.g. 20000"/>
+        </div>
+        <div class="form-group">
+          <label>Monthly Savings Target (₹)</label>
+          <input type="number" id="goal-savings" placeholder="e.g. 5000"/>
+        </div>
+        <button class="btn-primary" onclick="saveGoals()">💾 Save Goals</button>
+        <div id="goals-msg" class="success-msg" style="display:none">✅ Goals saved!</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ── QUOTES ──────────────────────────────────────────────
+const quotes = [
+  "💡 A budget is telling your money where to go instead of wondering where it went.",
+  "🌱 Small savings today, big freedom tomorrow.",
+  "🏆 Financial freedom is available to those who learn about it and work for it.",
+  "🔑 Do not save what is left after spending, but spend what is left after saving.",
+  "⚡ Track every rupee — it adds up faster than you think.",
+  "🎯 Wealth is not about having a lot of money; it's about having a lot of options.",
+];
+document.getElementById('quote-banner').textContent = quotes[Math.floor(Math.random() * quotes.length)];
+
+// ── THEME ────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙 Dark Mode' : '☀️ Light Mode';
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+document.getElementById('theme-btn').textContent = savedTheme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode';
+
+// ── NAVIGATION ───────────────────────────────────────────
+function showSection(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'history')   loadHistory();
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'wallets')   loadWallets();
+  if (name === 'profile')   loadProfile();
+  if (name === 'goals')     loadGoalsValues();
+}
+// ── ALERT ────────────────────────────────────────────────
+function showAlert(msg, type='warn') {
+  const p = document.getElementById('alert-popup');
+  const m = document.getElementById('alert-msg');
+  m.textContent = msg;
+  p.className = 'alert-popup ' + type;
+  setTimeout(() => p.classList.add('hidden'), 5000);
+}
+
+// ── DASHBOARD ────────────────────────────────────────────
+async function loadDashboard() {
+  const res  = await fetch('/api/stats');
+  const data = await res.json();
+
+  document.getElementById('month-total').textContent    = '₹' + data.month_total.toFixed(2);
+  document.getElementById('week-total').textContent     = '₹' + data.week_total.toFixed(2);
+  document.getElementById('budget-display').textContent = '₹' + data.budget.toFixed(2);
+  document.getElementById('savings-display').textContent= '₹' + data.savings_target.toFixed(2);
+
+  // Budget alert
+  if (data.budget > 0) {
+    const pct = (data.month_total / data.budget) * 100;
+    if (pct >= 100) showAlert('🚨 You have EXCEEDED your monthly budget!', 'danger');
+    else if (pct >= 80) showAlert('⚠️ You have used ' + pct.toFixed(0) + '% of your monthly budget!', 'warn');
+  }
+
+  // Category chart
+  const catCtx = document.getElementById('categoryChart').getContext('2d');
+  if (window._cat) window._cat.destroy();
+  window._cat = new Chart(catCtx, {
+    type: 'doughnut',
+    data: {
+      labels: data.categories.map(c => c.category),
+      datasets: [{ data: data.categories.map(c => c.total),
+        backgroundColor: ['#FF6B6B','#4ECDC4','#FFE66D','#A8E6CF','#C3B1E1','#FF8B94','#87CEEB'],
+        borderWidth: 0 }]
+    },
+    options: { plugins: { legend: { labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text') } } }, cutout: '65%' }
+  });
+
+  // Budget chart
+  const budCtx = document.getElementById('budgetChart').getContext('2d');
+  if (window._bud) window._bud.destroy();
+  const over = data.month_total > data.budget && data.budget > 0;
+  document.getElementById('budget-msg').textContent = data.budget > 0
+    ? over ? `🚨 Over budget by ₹${(data.month_total - data.budget).toFixed(2)}!`
+           : `✅ ₹${(data.budget - data.month_total).toFixed(2)} remaining`
+    : 'Set a budget in Goals';
+  window._bud = new Chart(budCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Budget','Spent'],
+      datasets: [{ data: [data.budget, data.month_total],
+        backgroundColor: [over ? '#FF6B6B':'#4ECDC4','#FF6B6B'],
+        borderRadius: 8, borderWidth: 0 }]
+    },
+    options: { plugins:{legend:{display:false}},
+      scales:{ y:{ticks:{color:'#aaa'},grid:{color:'#33333355'}}, x:{ticks:{color:'#aaa'},grid:{display:false}} } }
+  });
+}
+
+// ── ADD EXPENSE ──────────────────────────────────────────
+document.getElementById('exp-date').valueAsDate = new Date();
+
+async function addExpense() {
+  const title     = document.getElementById('exp-title').value.trim();
+  const amount    = parseFloat(document.getElementById('exp-amount').value);
+  const category  = document.getElementById('exp-category').value;
+  const date      = document.getElementById('exp-date').value;
+  const wallet    = document.getElementById('exp-wallet').value;
+  const note      = document.getElementById('exp-note').value.trim();
+  const recurring = document.getElementById('exp-recurring').checked ? 1 : 0;
+  if (!title || !amount || !date) return alert('Please fill all required fields!');
+
+  await fetch('/api/expenses', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title, amount, category, date, wallet, note, recurring})
+  });
+  document.getElementById('exp-title').value  = '';
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-note').value   = '';
+  document.getElementById('exp-recurring').checked = false;
+  const msg = document.getElementById('add-msg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+// ── HISTORY ──────────────────────────────────────────────
+async function loadHistory() {
+  const search   = document.getElementById('search-input').value;
+  const category = document.getElementById('filter-category').value;
+  const wallet   = document.getElementById('filter-wallet').value;
+  const res      = await fetch(`/api/expenses?search=${search}&category=${category}&wallet=${wallet}`);
+  const expenses = await res.json();
+  const list     = document.getElementById('expense-list');
+  if (!expenses.length) { list.innerHTML = '<p class="empty-msg">No expenses found.</p>'; return; }
+  list.innerHTML = expenses.map(e => `
+    <div class="expense-item">
+      <div class="exp-info">
+        <span class="exp-title">${e.title} ${e.recurring ? '🔁' : ''}</span>
+        <span class="exp-meta">${e.category} · ${e.wallet} · ${e.date}${e.note ? ' · ' + e.note : ''}</span>
+      </div>
+      <div class="exp-right">
+        <span class="exp-amount">₹${parseFloat(e.amount).toFixed(2)}</span>
+        <button class="btn-delete" onclick="deleteExpense(${e.id})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
+  await fetch('/api/expenses/'+id, {method:'DELETE'});
+  loadHistory();
+}
+
+// ── ANALYTICS ────────────────────────────────────────────
+async function loadAnalytics() {
+  const [statsRes, trendRes, expRes] = await Promise.all([
+    fetch('/api/stats'), fetch('/api/trend'), fetch('/api/expenses')
+  ]);
+  const stats    = await statsRes.json();
+  const trend    = await trendRes.json();
+  const expenses = await expRes.json();
+
+  // Trend chart
+  const tCtx = document.getElementById('trendChart').getContext('2d');
+  if (window._trend) window._trend.destroy();
+  window._trend = new Chart(tCtx, {
+    type: 'line',
+    data: {
+      labels: trend.map(t => t.month),
+      datasets: [{ label:'Monthly Spending', data: trend.map(t => t.total),
+        borderColor:'#7c6aff', backgroundColor:'rgba(124,106,255,0.15)',
+        borderWidth:3, pointBackgroundColor:'#7c6aff', pointRadius:5, fill:true, tension:0.4 }]
+    },
+    options: { plugins:{legend:{labels:{color:'#aaa'}}},
+      scales:{ y:{ticks:{color:'#aaa', callback: v=>'₹'+v}, grid:{color:'#33333355'}},
+               x:{ticks:{color:'#aaa'}, grid:{display:false}} } }
+  });
+
+  // Wallet chart
+  const wCtx = document.getElementById('walletChart').getContext('2d');
+  if (window._wallet) window._wallet.destroy();
+  window._wallet = new Chart(wCtx, {
+    type: 'doughnut',
+    data: {
+      labels: stats.wallets.map(w => w.wallet),
+      datasets: [{ data: stats.wallets.map(w => w.total),
+        backgroundColor:['#4ECDC4','#7c6aff','#FFE66D'], borderWidth:0 }]
+    },
+    options: { plugins:{legend:{labels:{color:'#aaa'}}}, cutout:'60%' }
+  });
+
+  // Recurring chart
+  const recurring    = expenses.filter(e => e.recurring).reduce((s,e)=>s+e.amount, 0);
+  const nonRecurring = expenses.filter(e => !e.recurring).reduce((s,e)=>s+e.amount, 0);
+  const rCtx = document.getElementById('recurringChart').getContext('2d');
+  if (window._rec) window._rec.destroy();
+  window._rec = new Chart(rCtx, {
+    type: 'doughnut',
+    data: {
+      labels:['Recurring','One-Time'],
+      datasets:[{ data:[recurring, nonRecurring], backgroundColor:['#FF6B6B','#4ECDC4'], borderWidth:0 }]
+    },
+    options:{plugins:{legend:{labels:{color:'#aaa'}}}, cutout:'60%'}
+  });
+}
+
+// ── WALLETS ──────────────────────────────────────────────
+async function loadWallets() {
+  const res  = await fetch('/api/stats');
+  const data = await res.json();
+  const map  = {};
+  data.wallets.forEach(w => map[w.wallet] = w.total);
+  document.getElementById('wallet-cash').textContent = '₹' + (map['Cash']||0).toFixed(2);
+  document.getElementById('wallet-card').textContent = '₹' + (map['Card']||0).toFixed(2);
+  document.getElementById('wallet-upi').textContent  = '₹' + (map['UPI']||0).toFixed(2);
+}
+
+// ── PROFILE ──────────────────────────────────────────────
+async function loadProfile() {
+  const res  = await fetch('/api/profile');
+  const data = await res.json();
+  document.getElementById('profile-name').value   = data.name || '';
+  document.getElementById('profile-income').value = data.income || '';
+  if (data.photo) document.getElementById('avatar-preview').innerHTML = `<img src="${data.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover"/>`;
+}
+
+function previewPhoto(event) {
+  const file   = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('avatar-preview').innerHTML =
+      `<img src="${e.target.result}" style="width:80px;height:80px;border-radius:50%;object-fit:cover"/>`;
+  };
+  reader.readAsDataURL(file);
+}
+async function saveProfile() {
+  const name   = document.getElementById('profile-name').value.trim();
+  const income = parseFloat(document.getElementById('profile-income').value) || 0;
+  const img    = document.getElementById('avatar-preview').querySelector('img');
+  const photo  = img ? img.src : '';
+  await fetch('/api/profile', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({name, income, photo})
+  });
+  const msg = document.getElementById('profile-msg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+
+  // Income summary
+  const statsRes = await fetch('/api/stats');
+  const stats    = await statsRes.json();
+  if (income > 0) {
+    const leftover = income - stats.month_total;
+    const summary  = document.getElementById('income-summary');
+    summary.style.display = 'block';
+    summary.innerHTML = `
+      <div>💰 Income: ₹${income.toFixed(2)}</div>
+      <div>💸 Spent: ₹${stats.month_total.toFixed(2)}</div>
+      <div>🏦 Remaining: ₹${leftover.toFixed(2)}</div>
+    `;
+  }
+}
+
+// ── GOALS ────────────────────────────────────────────────
+async function saveGoals() {
+  const budget         = parseFloat(document.getElementById('goal-budget').value) || 0;
+  const savings_target = parseFloat(document.getElementById('goal-savings').value) || 0;
+  await fetch('/api/goals', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({budget, savings_target})
+  });
+  const msg = document.getElementById('goals-msg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+async function loadGoalsValues() {
+  const res  = await fetch('/api/stats');
+  const data = await res.json();
+  document.getElementById('goal-budget').value   = data.budget || '';
+  document.getElementById('goal-savings').value  = data.savings_target || '';
+}
+
+// Init
+loadDashboard();
+</script>
+</body>
+</html>
