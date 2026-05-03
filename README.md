@@ -1,6 +1,6 @@
 # 💸 SpendWise — Personal Expense Tracker
 
-A full-stack personal finance web app built with **Python (Flask)**, **SQLite**, **HTML**, and **CSS**.  
+A full-stack personal finance web app built with **Python (Flask)**, **HTML**, and **CSS**.  
 Track your daily expenses, monitor budgets, manage wallets, and visualize your spending — all in one place.
 
 ---
@@ -28,9 +28,7 @@ Track your daily expenses, monitor budgets, manage wallets, and visualize your s
 |---|---|
 | Backend | Python 3, Flask |
 | Database | SQLite (via Python's built-in `sqlite3`) |
-| Frontend | HTML5, CSS3, Vanilla JavaScript |
-| Charts | Chart.js (CDN) |
-| Fonts | Google Fonts — Syne + DM Sans |
+| Frontend | HTML5, CSS3 |
 
 ---
 
@@ -135,7 +133,7 @@ No frameworks like React or Django were used — just pure Flask on the backend,
 
 **Built by:** Kanchan Rawat 
 **Location:** India  
-**Stack:** Python · Flask · SQLite · HTML · CSS · JavaScript
+**Stack:** Python · Flask  · HTML
 
 ---
 
